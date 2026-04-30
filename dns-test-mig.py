@@ -1,53 +1,55 @@
+#!/usr/bin/env python3
 import os
 import subprocess
 import questionary
 
-# Lista de DNS para testar
+# List of DNS providers to test
 DNS_PROVIDERS = {
     "Google": "8.8.8.8",
     "Cloudflare": "1.1.1.1",
     "OpenDNS": "208.67.222.222",
     "Quad9": "9.9.9.9",
+    "AdGuard": "94.140.14.14",
     "Local (Gateway)": "192.168.1.1"
 }
 
 def get_ping(ip):
-    """Retorna a latência média em ms."""
+    """Returns the average latency in ms."""
     try:
-        # Executa 3 pings e pega a média
+        # Executes 3 pings and gets the average
         output = subprocess.check_output(
             ["ping", "-c", "3", "-n", ip], 
             stderr=subprocess.STDOUT, 
             universal_newlines=True
         )
-        # Extrai o tempo médio da saída do comando ping
+        # Extracts the average time from the ping command output
         avg_ping = output.split('/')[-3]
         return float(avg_ping)
     except:
         return float('inf')
 
 def apply_dns(ip):
-    """Aplica o DNS via nmcli (NetworkManager)."""
+    """Applies the DNS via nmcli (NetworkManager)."""
     try:
-        # Pega o nome da conexão ativa (ex: 'Wired connection 1' ou 'wlan0')
+        # Gets the name of the active connection (e.g., 'Wired connection 1' or 'wlan0')
         conn = subprocess.check_output(
             "nmcli -t -f NAME connection show --active | head -n 1", 
             shell=True, universal_newlines=True
         ).strip()
         
-        print(f"\nAplicando {ip} na conexão: {conn}...")
+        print(f"\nApplying {ip} to connection: {conn}...")
         
-        # Define o DNS e reinicia a interface para aplicar
+        # Sets the DNS and restarts the interface to apply changes
         os.system(f"nmcli connection modify '{conn}' ipv4.dns '{ip}'")
         os.system(f"nmcli connection modify '{conn}' ipv4.ignore-auto-dns yes")
         os.system(f"nmcli connection up '{conn}'")
         
-        print("Sucesso! DNS alterado.")
+        print("Success! DNS has been changed.")
     except Exception as e:
-        print(f"Erro ao aplicar: {e}")
+        print(f"Error applying DNS: {e}")
 
 def main():
-    print("Verificando latência dos servidores DNS...\n")
+    print("Checking DNS server latency...\n")
     results = []
 
     for name, ip in DNS_PROVIDERS.items():
@@ -55,22 +57,22 @@ def main():
         results.append((name, ip, latency))
         print(f"[{name}] {ip} -> {latency}ms")
 
-    # Ordena pelo melhor ping
+    # Sorts by the best ping
     results.sort(key=lambda x: x[2])
     best = results[0]
 
-    print(f"\nO melhor DNS encontrado foi: {best[0]} ({best[1]}) com {best[2]}ms")
+    print(f"\nThe best DNS found was: {best[0]} ({best[1]}) with {best[2]}ms")
 
-    # Menu interativo
+    # Interactive menu
     choice = questionary.select(
-        "Deseja aplicar qual DNS?",
-        choices=[f"{r[0]} ({r[1]}) - {r[2]}ms" for r in results] + ["Sair"]
+        "Which DNS would you like to apply?",
+        choices=[f"{r[0]} ({r[1]}) - {r[2]}ms" for r in results] + ["Exit"]
     ).ask()
 
-    if choice != "Sair":
-        # Extrai o IP da string de escolha
+    if choice != "Exit":
+        # Extracts the IP from the choice string
         selected_ip = choice.split('(')[1].split(')')[0]
         apply_dns(selected_ip)
 
 if __name__ == "__main__":
-    main() 
+    main()
