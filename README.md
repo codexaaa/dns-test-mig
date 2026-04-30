@@ -26,4 +26,4 @@ Python 3
 
 NetworkManager (nmcli)
 
-Developed by codexaaa
+Developed by Mig :D
