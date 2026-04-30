@@ -14,9 +14,6 @@ DNS_PROVIDERS = {
     "GigaDNS 1": "189.38.95.95",
     "GigaDNS 2": "189.38.95.96",
     "Umbler (Brazil)": "187.84.150.123",
-    "Algar Telecom": "201.48.24.11",
-    "Vivo (Brazil)": "200.204.0.10",
-    "Claro/NET (Brazil)": "201.21.192.101",
     "AdGuard (Block Ads)": "94.140.14.14",
     "Mullvad (Privacy)": "194.242.2.2",
     "Control D": "76.76.2.0",
@@ -26,12 +23,10 @@ DNS_PROVIDERS = {
     "Comodo Secure": "8.26.56.26",
     "Level3 (Lumen)": "4.2.2.1",
     "Verisign": "64.6.64.6",
-    "Oracle (Dyn)": "216.146.35.35",
     "Freenom": "80.80.80.80",
     "Yandex (Russia)": "77.88.8.8",
     "Tencent (China)": "119.29.29.29",
     "AliDNS (Alibaba)": "223.5.5.5",
-    "OpenNIC (Global)": "185.121.177.177",
     "Neustar": "156.154.70.1",
     "Hurricane Electric": "74.82.42.42"
 }
