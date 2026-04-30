@@ -67,7 +67,7 @@ def apply_dns(ip):
         print(f"Error applying DNS: {e}")
 
 def main():
-    print("Checking DNS server latency...\n")
+    print("Checking DNS server latency... (10s - 5m)\n")
     results = []
 
     for name, ip in DNS_PROVIDERS.items():
