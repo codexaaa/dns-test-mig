@@ -10,7 +10,11 @@ DNS_PROVIDERS = {
     "OpenDNS": "208.67.222.222",
     "Quad9": "9.9.9.9",
     "AdGuard": "94.140.14.14",
-    "Local (Gateway)": "192.168.1.1"
+    "DNS.Watch": "84.200.69.80",
+    "Comodo Secure DNS": "8.26.56.26",
+    "OpenDNS": "208.67.222.222",
+    
+    
 }
 
 def get_ping(ip):
