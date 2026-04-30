@@ -2,6 +2,7 @@
 import os
 import subprocess
 import questionary
+import re
 
 # List of DNS providers to test
 DNS_PROVIDERS = {
@@ -34,40 +35,42 @@ DNS_PROVIDERS = {
 def get_ping(ip):
     """Returns the average latency in ms."""
     try:
-        # Executes 3 pings and gets the average
         output = subprocess.check_output(
             ["ping", "-c", "3", "-n", ip], 
             stderr=subprocess.STDOUT, 
             universal_newlines=True
         )
-        # Extracts the average time from the ping command output
         avg_ping = output.split('/')[-3]
         return float(avg_ping)
     except:
         return float('inf')
 
 def apply_dns(ip):
-    """Applies the DNS via nmcli (NetworkManager)."""
+    """Applies the DNS via nmcli (NetworkManager) with sudo."""
     try:
-        # Gets the name of the active connection (e.g., 'Wired connection 1' or 'wlan0')
+        # Improved connection detection to handle spaces
         conn = subprocess.check_output(
             "nmcli -t -f NAME connection show --active | head -n 1", 
             shell=True, universal_newlines=True
         ).strip()
         
-        print(f"\nApplying {ip} to connection: {conn}...")
+        if not conn:
+            print("No active connection found!")
+            return
+
+        print(f"\nApplying {ip} to connection: '{conn}'...")
         
-        # Sets the DNS and restarts the interface to apply changes
-        os.system(f"nmcli connection modify '{conn}' ipv4.dns '{ip}'")
-        os.system(f"nmcli connection modify '{conn}' ipv4.ignore-auto-dns yes")
-        os.system(f"nmcli connection up '{conn}'")
+        # Using sudo directly in commands to ensure permissions
+        os.system(f"sudo nmcli connection modify '{conn}' ipv4.dns '{ip}'")
+        os.system(f"sudo nmcli connection modify '{conn}' ipv4.ignore-auto-dns yes")
+        os.system(f"sudo nmcli connection up '{conn}'")
         
         print("Success! DNS has been changed.")
     except Exception as e:
         print(f"Error applying DNS: {e}")
 
 def main():
-    print("Checking DNS server latency... (10s - 5m)\n")
+    print("Checking DNS server latency... (This may take a moment)\n")
     results = []
 
     for name, ip in DNS_PROVIDERS.items():
@@ -75,22 +78,25 @@ def main():
         results.append((name, ip, latency))
         print(f"[{name}] {ip} -> {latency}ms")
 
-    # Sorts by the best ping
     results.sort(key=lambda x: x[2])
     best = results[0]
 
     print(f"\nThe best DNS found was: {best[0]} ({best[1]}) with {best[2]}ms")
 
-    # Interactive menu
     choice = questionary.select(
         "Which DNS would you like to apply?",
-        choices=[f"{r[0]} ({r[1]}) - {r[2]}ms" for r in results] + ["Exit"]
+        choices=[f"{r[0]} | {r[1]} | {r[2]}ms" for r in results] + ["Exit"]
     ).ask()
 
-    if choice != "Exit":
-        # Extracts the IP from the choice string
-        selected_ip = choice.split('(')[1].split(')')[0]
-        apply_dns(selected_ip)
+    if choice and choice != "Exit":
+        # Robust IP extraction using Regex to avoid the 'invalid address' error
+        ip_pattern = r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"
+        match = re.search(ip_pattern, choice)
+        if match:
+            selected_ip = match.group(1)
+            apply_dns(selected_ip)
+        else:
+            print("Could not parse IP address from selection.")
 
 if __name__ == "__main__":
     main()
