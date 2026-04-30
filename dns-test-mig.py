@@ -35,9 +35,6 @@ DNS_PROVIDERS = {
     "Neustar": "156.154.70.1",
     "Hurricane Electric": "74.82.42.42"
 }
-    
-    
-}
 
 def get_ping(ip):
     """Returns the average latency in ms."""
