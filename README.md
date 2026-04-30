@@ -1,4 +1,3 @@
-⚡ DNS Test By Mig
 DNS Test is a lightweight terminal utility designed for Linux users to optimize their internet connection latency. It automatically tests the response time of the world's most popular DNS providers and allows you to apply the fastest one with just a few keystrokes.
 
 ✨ Features
