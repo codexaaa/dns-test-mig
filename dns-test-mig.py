@@ -73,4 +73,4 @@ def main():
         apply_dns(selected_ip)
 
 if __name__ == "__main__":
-    main()
+    main() 
