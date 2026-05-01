@@ -27,17 +27,62 @@ LANG_DATA = {
         "success": "Success! DNS has been changed.",
         "error": "Error applying DNS: {}",
         "parse_error": "Could not parse IP address from selection."
+    },
+    "es_ES": {
+        "checking": "Comprobando la latencia de los servidores DNS...",
+        "best_found": "\nEl mejor DNS encontrado fue: {} ({}) con {}ms",
+        "menu_title": "¿Qué DNS le gustaría aplicar?",
+        "exit": "Salir",
+        "no_conn": "¡No se encontró ninguna conexión activa!",
+        "applying": "\nAplicando {} a la conexión: '{}'...",
+        "success": "¡Éxito! El DNS ha sido cambiado.",
+        "error": "Error al aplicar el DNS: {}",
+        "parse_error": "No se pudo extraer la dirección IP de la selección."
+    },
+    "fr_FR": {
+        "checking": "Vérification de la latence des serveurs DNS...",
+        "best_found": "\nLe meilleur DNS trouvé était : {} ({}) avec {}ms",
+        "menu_title": "Quel DNS souhaitez-vous appliquer ?",
+        "exit": "Quitter",
+        "no_conn": "Aucune connexion active trouvée !",
+        "applying": "\nApplication de {} à la connexion : '{}'...",
+        "success": "Succès ! Le DNS a été modifié.",
+        "error": "Erreur lors de l'application du DNS : {}",
+        "parse_error": "Impossible d'extraire l'adresse IP de la sélection."
+    },
+    "de_DE": {
+        "checking": "DNS-Server-Latenz wird geprüft...",
+        "best_found": "\nDer beste gefundene DNS war: {} ({}) mit {}ms",
+        "menu_title": "Welchen DNS möchten Sie anwenden?",
+        "exit": "Beenden",
+        "no_conn": "Keine aktive Verbindung gefunden!",
+        "applying": "\n{} wird auf Verbindung '{}' angewendet...",
+        "success": "Erfolg! DNS wurde geändert.",
+        "error": "Fehler beim Anwenden des DNS: {}",
+        "parse_error": "IP-Adresse konnte nicht aus der Auswahl extrahiert werden."
+    },
+    "it_IT": {
+        "checking": "Verifica della latenza dei server DNS...",
+        "best_found": "\nIl miglior DNS trovato è stato: {} ({}) con {}ms",
+        "menu_title": "Quale DNS vorresti applicare?",
+        "exit": "Esci",
+        "no_conn": "Nessuna connessione attiva trovata!",
+        "applying": "\nApplicazione di {} alla connessione: '{}'...",
+        "success": "Successo! Il DNS è stato modificato.",
+        "error": "Errore durante l'applicazione del DNS: {}",
+        "parse_error": "Impossibile estrarre l'indirizzo IP dalla selezione."
     }
 }
 
+# Detect language
 try:
-    current_locale = locale.getdefaultlocale()[0]
+    current_locale = locale.getdefaultlocale()[0] or "en_US"
 except:
     current_locale = "en_US"
 
 texts = LANG_DATA.get(current_locale, LANG_DATA["en_US"])
 
-# --- LISTA DE PROVEDORES DNS ---
+# --- DNS PROVIDERS ---
 DNS_PROVIDERS = {
     "Google 1": "8.8.8.8",
     "Google 2": "8.8.4.4",
@@ -66,20 +111,22 @@ DNS_PROVIDERS = {
 }
 
 def get_ping(ip):
-    """Retorna a latência média em ms."""
+    """Returns average latency in ms."""
     try:
+        # -c 3 is for Linux/macOS. For Windows it would be -n 3
         output = subprocess.check_output(
             ["ping", "-c", "3", "-n", ip], 
             stderr=subprocess.STDOUT, 
             universal_newlines=True
         )
+        # Extracting avg from "min/avg/max/mdev = 10.123/12.456/..."
         avg_ping = output.split('/')[-3]
         return float(avg_ping)
     except:
         return float('inf')
 
 def apply_dns(ip):
-    """Aplica o DNS via nmcli com sudo."""
+    """Applies DNS via nmcli with sudo."""
     try:
         conn = subprocess.check_output(
             "nmcli -t -f NAME connection show --active | head -n 1", 
@@ -92,9 +139,10 @@ def apply_dns(ip):
 
         print(texts["applying"].format(ip, conn))
         
-        os.system(f"sudo nmcli connection modify '{conn}' ipv4.dns '{ip}'")
-        os.system(f"sudo nmcli connection modify '{conn}' ipv4.ignore-auto-dns yes")
-        os.system(f"sudo nmcli connection up '{conn}'")
+        # Using subprocess.run for better command handling
+        subprocess.run(["sudo", "nmcli", "connection", "modify", conn, "ipv4.dns", ip], check=True)
+        subprocess.run(["sudo", "nmcli", "connection", "modify", conn, "ipv4.ignore-auto-dns", "yes"], check=True)
+        subprocess.run(["sudo", "nmcli", "connection", "up", conn], check=True)
         
         print(texts["success"])
     except Exception as e:
@@ -107,20 +155,28 @@ def main():
     for name, ip in DNS_PROVIDERS.items():
         latency = get_ping(ip)
         results.append((name, ip, latency))
-        print(f"[{name}] {ip} -> {latency}ms")
+        # Optional: Print progress
+        status = f"{latency}ms" if latency != float('inf') else "TIMEOUT"
+        print(f"[{name}] {ip} -> {status}")
 
     results.sort(key=lambda x: x[2])
     best = results[0]
 
+    if best[2] == float('inf'):
+        print("\nNo servers responded.")
+        return
+
     print(texts["best_found"].format(best[0], best[1], best[2]))
     
+    choices = [f"{r[0]} | {r[1]} | {r[2]}ms" for r in results if r[2] != float('inf')]
+    choices.append(texts["exit"])
+
     choice = questionary.select(
         texts["menu_title"],
-        choices=[f"{r[0]} | {r[1]} | {r[2]}ms" for r in results] + [texts["exit"]]
+        choices=choices
     ).ask()
 
     if choice and choice != texts["exit"]:
-        
         ip_pattern = r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"
         match = re.search(ip_pattern, choice)
         if match:
